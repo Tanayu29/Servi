@@ -2,24 +2,20 @@ from orchestrator import OrchestratorAgent
 from db.sqlite import init_db
 
 if __name__ == "__main__":
-
     init_db()
 
-    orchestrator = OrchestratorAgent()
+    orch = OrchestratorAgent()
 
     request = {
-        "task_type": "knowledge.generate",
+        "task_type": "knowledge.approve",
         "user_context": {
             "user_id": "yuya",
-            "role": "knowledge_user"
+            "role": "admin"
         },
         "input": {
-            "sources": [
-                {"type": "email", "content": "障害対応しました"}
-            ]
+            "knowledge_id": 1
         }
     }
 
-    response = orchestrator.handle_request(request)
-
+    response = orch.handle_request(request)
     print(response)

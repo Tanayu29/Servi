@@ -1,6 +1,7 @@
 ## エージェント構成
 OrchestratorAgent
  ├─ KnowledgeAgent
+    └─ SQLite SELECT 専門
  ├─ AutomationAgent
  ├─ PlanningAgent
  ├─ BusinessSupportAgent
@@ -16,6 +17,7 @@ OrchestratorAgent
 Servi/
 ├─ main.py
 ├─ orchestrator.py
+├─ writer.py
 ├─ db/
 │  ├─ __init__.py
 │  └─ sqlite.py
@@ -48,3 +50,12 @@ CREATE TABLE knowledge (
     approved INTEGER DEFAULT 0
 );
 ```
+## 配布構成
+配布フォルダ/
+├─ approve.exe
+├─ config.yaml   ← ★編集可能
+├─ data/
+│  └─ app.db
+## ビルド
+cd D:\work\Mywork\Servi
+.\release.ps1

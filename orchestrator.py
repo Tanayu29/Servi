@@ -1,7 +1,20 @@
+import os
+import sys
 import uuid
 import datetime
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, BASE_DIR)
+
+
 from agents.knowledge import KnowledgeAgent
-from db.sqlite import insert_log
+from agents.knowledge_search import KnowledgeSearchAgent
+from agents.knowledge_approval import KnowledgeApprovalAgent
+from writer import WriterAgent
+
+
+writer = WriterAgent()
+
 
 class OrchestratorAgent:
 
@@ -11,41 +24,88 @@ class OrchestratorAgent:
         try:
             category = self._classify_task(request)
             agent = self._select_agent(category)
+
             response = agent.execute(request)
 
-            insert_log(
-                request["request_id"],
-                agent.name,
-                response["status"],
-                "execution finished"
-            )
+            writer.enqueue("log", {
+                "request_id": request["request_id"],
+                "agent": agent.name,
+                "status": response.get("status"),
+                "message": "execution finished"
+            })
+
+            if response.get("status") == "success":
+                self._post_process_success(category, request, response)
+
+            return response
 
         except Exception as e:
-            insert_log(
-                request["request_id"],
-                "OrchestratorAgent",
-                "failed",
-                str(e)
-            )
-            raise
+            writer.enqueue("log", {
+                "request_id": request.get("request_id"),
+                "agent": "OrchestratorAgent",
+                "status": "failed",
+                "message": str(e)
+            })
 
-        if response.get("human_review_required"):
-            print(">>> 人間の確認が必要です")
+            return {
+                "request_id": request.get("request_id"),
+                "status": "failed",
+                "agent": "OrchestratorAgent",
+                "errors": [str(e)]
+            }
 
-        return response
+    # ---------------------
 
-    def _normalize_request(self, raw):
+    def _normalize_request(self, raw: dict) -> dict:
+        raw = raw.copy()
         raw["request_id"] = str(uuid.uuid4())
         raw["timestamp"] = datetime.datetime.now().isoformat()
-        raw["from"] = "Interface"
+        raw.setdefault("user_context", {})
         return raw
 
-    def _classify_task(self, request):
-        if request.get("task_type", "").startswith("knowledge."):
-            return "knowledge"
-        raise ValueError("Unsupported task")
+    def _classify_task(self, request: dict) -> str:
+        task_type = request.get("task_type", "")
 
-    def _select_agent(self, category):
-        if category == "knowledge":
+        if task_type.startswith("knowledge.generate"):
+            return "knowledge_generate"
+
+        if task_type.startswith("knowledge.search"):
+            return "knowledge_search"
+
+        if task_type.startswith("knowledge.approve"):
+            return "knowledge_approve"
+
+        raise ValueError(f"Unsupported task_type: {task_type}")
+
+    def _select_agent(self, category: str):
+        if category == "knowledge_generate":
             return KnowledgeAgent()
-        raise ValueError("Agent not found")
+
+        if category == "knowledge_search":
+            return KnowledgeSearchAgent()
+
+        if category == "knowledge_approve":
+            return KnowledgeApprovalAgent()
+
+        raise ValueError(f"No agent for category: {category}")
+
+    def _post_process_success(self, category, request, response):
+
+        if category == "knowledge_generate":
+            result = response["result"]
+            user_id = request.get("user_context", {}).get("user_id", "unknown")
+
+            writer.enqueue("knowledge", {
+                "request_id": request["request_id"],
+                "title": result.get("title"),
+                "summary": result.get("summary"),
+                "body": result.get("markdown_body"),
+                "user": user_id
+            })
+
+        if category == "knowledge_approve":
+            knowledge_id = response["result"]["knowledge_id"]
+
+            writer.enqueue("approve", {
+                "knowledge_id": knowledge_id
+            })

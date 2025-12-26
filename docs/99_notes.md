@@ -1,61 +1,26 @@
-## エージェント構成
-OrchestratorAgent
- ├─ KnowledgeAgent
-    └─ SQLite SELECT 専門
- ├─ AutomationAgent
- ├─ PlanningAgent
- ├─ BusinessSupportAgent
- └─ LearningAgent
+## やりたいこと
+
 ## 環境前提ルール
-- 実行環境はWindows
-- 配布形式はexe
-- DBはSQLite（共有サーバ配置）
-- 同時書き込みを避ける設計とする
-- ナレッジ機能は複数ユーザ対応
-- 副業機能は個人利用限定
-## ファイル構成
-Servi/
-├─ main.py
-├─ orchestrator.py
-├─ writer.py
-├─ db/
-│  ├─ __init__.py
-│  └─ sqlite.py
-├─ agents/
-│  ├─ __init__.py
-│  ├─ base.py
-│  └─ knowledge.py
-└─ data/
-   └─ app.db
-## テーブル構成
-```sql
-CREATE TABLE logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    request_id TEXT,
-    timestamp TEXT,
-    agent TEXT,
-    status TEXT,
-    message TEXT
-);
-```
-```sql
-CREATE TABLE knowledge (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    request_id TEXT,
-    title TEXT,
-    summary TEXT,
-    markdown_body TEXT,
-    created_by TEXT,
-    created_at TEXT,
-    approved INTEGER DEFAULT 0
-);
-```
-## 配布構成
-配布フォルダ/
-├─ approve.exe
-├─ config.yaml   ← ★編集可能
-├─ data/
-│  └─ app.db
-## ビルド
-cd D:\work\Mywork\Servi
-.\release.ps1
+- 実行環境はWindows。
+- 配布形式はexe。
+- DBはSQLiteを想定。（共有サーバ配置）
+- 同時書き込みを避ける設計とする。
+- パス関係は基本外だしで管理。アプリ名も外だし。
+## Qiita / Zenn 記事
+1. 社内自動化ツールが失敗する理由を全部書く
+2. 常駐プロセスが怖い人のための設計思考
+3. Excel 自動化をサーバでやってはいけない理由
+4. SQLite を共有で使うと壊れる本当の理由
+5. ファイルベース連携という最強に地味な解
+## 記事ネタ
+### 失敗談系
+- なぜSQLiteを共有で使うと壊れるのか。
+- なぜ社内共有サーバでのアプリ常駐起動が気持ち悪く感じるのか。
+- プロジェクトを跨いでいくと、タスク管理アプリがただ増えていく。
+### 技術系
+- 
+### その他
+- 会議での話し方、言葉遣い
+- 会議には視覚的な情報を用意する
+- 仕事のアウトプットイメージを伝えないとどうなるか。
+- 
